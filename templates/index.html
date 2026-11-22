@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบยืม-คืนหนังสือ</title>
+  <style>
+    body { font-family: "Sarabun", "Segoe UI", sans-serif; margin: 0; background: #f4f6fb; color: #1e293b; }
+    header { background: #1e3a8a; color: #fff; padding: 18px 32px; }
+    main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+    .stats { display: flex; gap: 12px; margin-bottom: 16px; }
+    .stat { flex: 1; background: #fff; border-radius: 10px; padding: 12px 16px; box-shadow: 0 1px 3px #0001; }
+    .stat b { font-size: 1.6rem; display: block; }
+    .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px #0001; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }
+    input { padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+    button { padding: 6px 12px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+    .flash { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; }
+    .ok { background: #dcfce7; } .error { background: #fee2e2; }
+    .tag { padding: 2px 8px; border-radius: 99px; font-size: .85rem; }
+    .free { background: #dcfce7; } .out { background: #fef3c7; } .late { background: #fee2e2; }
+  </style>
+</head>
+<body>
+  <header><h1>📚 ระบบยืม-คืนหนังสือห้องสมุด</h1></header>
+  <main>
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+
+    <div class="stats">
+      <div class="stat"><b>{{ stats.total }}</b>หนังสือทั้งหมด</div>
+      <div class="stat"><b>{{ stats.available }}</b>ว่างให้ยืม</div>
+      <div class="stat"><b>{{ stats.borrowed }}</b>ถูกยืมอยู่</div>
+      <div class="stat"><b>{{ overdue|length }}</b>เกินกำหนดคืน</div>
+    </div>
+
+    <div class="card">
+      <form method="get">
+        <input name="q" value="{{ keyword }}" placeholder="ค้นหาชื่อหนังสือหรือผู้แต่ง">
+        <button>ค้นหา</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <table>
+        <tr><th>#</th><th>ชื่อหนังสือ</th><th>ผู้แต่ง</th><th>สถานะ</th><th></th></tr>
+        {% for book in books %}
+        <tr>
+          <td>{{ book.id }}</td>
+          <td>{{ book.title }}</td>
+          <td>{{ book.author }}</td>
+          <td>
+            {% if book.borrower %}
+              <span class="tag {{ 'late' if book in overdue else 'out' }}">ยืมโดย {{ book.borrower }} (คืน {{ book.due }})</span>
+            {% else %}
+              <span class="tag free">ว่าง</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if book.borrower %}
+              <form method="post" action="{{ url_for('return_book', book_id=book.id) }}"><button>คืน</button></form>
+            {% else %}
+              <form method="post" action="{{ url_for('borrow', book_id=book.id) }}">
+                <input name="borrower" placeholder="ชื่อผู้ยืม" required> <button>ยืม</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">ไม่พบหนังสือ</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>เพิ่มหนังสือใหม่</h3>
+      <form method="post" action="{{ url_for('add_book') }}">
+        <input name="title" placeholder="ชื่อหนังสือ" required>
+        <input name="author" placeholder="ผู้แต่ง" required>
+        <button>เพิ่ม</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>
